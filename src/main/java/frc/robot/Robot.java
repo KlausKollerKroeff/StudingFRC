@@ -10,12 +10,18 @@ import edu.wpi.first.units.Measure;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.IntakeConstants;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.units.Velocity;
+
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -26,7 +32,7 @@ import com.revrobotics.CANSparkMax;
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
-
+  private RelativeEncoder encoder;
   private RobotContainer m_robotContainer;
   private XboxController m_Controller = new XboxController(0);
   private IntakeConstants intakeConstants = new IntakeConstants();
@@ -37,8 +43,6 @@ public class Robot extends TimedRobot {
 
   double magnitude = 5;
   Measure<Angle> intakeWheelAngle = units.Degrees.of(1);
-  Encoder encoder = new Encoder(0, 1, false, Encoder.EncodingType.k2X);
-
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -48,6 +52,8 @@ public class Robot extends TimedRobot {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
+    motor.restoreFactoryDefaults();
+    encoder = motor.getEncoder();
   }
 
   /**
@@ -102,13 +108,22 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    double velocityController = 0;
+
+    motor.set((m_Controller.getLeftY())*(velocityController));
+
+    if(m_Controller.getAButton()){
+      velocityController += 0.1;
+    }
+
     if(m_Controller.getXButton()){
-      motor.set(encoder.getDistance());
+      velocityController -= 0.1;
     }
-    else{
-      motor.set(0);
+
+    SmartDashboard.putNumber("Encoder Position", encoder.getPosition());
+    SmartDashboard.putNumber("Velocity Intake Motor", velocityController);
+
     }
-  }
 
   @Override
   public void testInit() {
