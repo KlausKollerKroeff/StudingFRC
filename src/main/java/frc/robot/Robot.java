@@ -5,13 +5,16 @@
 package frc.robot;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.IntakeConstants;
-
+import edu.wpi.first.units.Units;
 import com.revrobotics.CANSparkMax;
 
 /**
@@ -23,12 +26,18 @@ import com.revrobotics.CANSparkMax;
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
+
   private RobotContainer m_robotContainer;
   private XboxController m_Controller = new XboxController(0);
   private IntakeConstants intakeConstants = new IntakeConstants();
+  private Units units;
 
-  public CANSparkMax motor = new CANSparkMax(4, MotorType.kBrushless);
-  public PIDController pidController = new PIDController(intakeConstants.P, intakeConstants.I, intakeConstants.D);
+  CANSparkMax motor = new CANSparkMax(4, MotorType.kBrushless);
+  PIDController pidController = new PIDController(intakeConstants.P, intakeConstants.I, intakeConstants.D);
+
+  double magnitude = 5;
+  Measure<Angle> intakeWheelAngle = units.Degrees.of(1);
+  Encoder encoder = new Encoder(0, 1, false, Encoder.EncodingType.k2X);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -94,7 +103,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     if(m_Controller.getXButton()){
-      motor.set(pidController.calculate(kDefaultPeriod, kDefaultPeriod));
+      motor.set(encoder.getDistance());
     }
     else{
       motor.set(0);
