@@ -7,10 +7,9 @@ package frc.robot;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.Angle;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -18,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.IntakeConstants;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.Velocity;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
@@ -32,17 +30,22 @@ import com.revrobotics.RelativeEncoder;
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
+  private DigitalInput limitSwitch = new DigitalInput(0);
   private RelativeEncoder encoder;
   private RobotContainer m_robotContainer;
-  private XboxController m_Controller = new XboxController(0);
+  private XboxController controllerXbox = new XboxController(0);
   private IntakeConstants intakeConstants = new IntakeConstants();
   private Units units;
+
 
   CANSparkMax motor = new CANSparkMax(4, MotorType.kBrushless);
   PIDController pidController = new PIDController(intakeConstants.P, intakeConstants.I, intakeConstants.D);
 
   double magnitude = 5;
   Measure<Angle> intakeWheelAngle = units.Degrees.of(1);
+  double velocityController = 0.5;
+
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -96,6 +99,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+
     // This makes sure that the autonomous stops running when
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
@@ -103,25 +107,38 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+
+    encoder.setPosition(0);
   }
 
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    double velocityController = 0;
+    if(limitSwitch.get()){
+      motor.set((controllerXbox.getLeftY())*(velocityController));
+    } else{
+      motor.set(0);
+    }
 
-    motor.set((m_Controller.getLeftY())*(velocityController));
 
-    if(m_Controller.getAButton()){
+    if(controllerXbox.getAButtonReleased() && velocityController<0.9){
       velocityController += 0.1;
     }
 
-    if(m_Controller.getXButton()){
+    if(controllerXbox.getXButtonReleased() && velocityController>0.1){
       velocityController -= 0.1;
     }
 
+    encoder.setPositionConversionFactor(360);
+    if(controllerXbox.getBButton()){
+      motor.set(pidController.calculate(encoder.getPosition(), 720));
+    }
+
+
+
     SmartDashboard.putNumber("Encoder Position", encoder.getPosition());
     SmartDashboard.putNumber("Velocity Intake Motor", velocityController);
+
 
     }
 
